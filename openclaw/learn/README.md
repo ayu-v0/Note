@@ -12,6 +12,18 @@
    按功能查源码位置。适合你想知道“这个按钮/命令/频道/插件在哪里实现”时使用。
 4. `04-source-reading-guide.md`
    给新手的源码阅读路线和调试切入点。
+5. `05-openclaw-mjs-launcher.md`
+   单独理解 `openclaw.mjs` 启动器：它只做 bootstrap，不承载主要业务逻辑。
+6. `06-architecture-invariants.md`
+   先记住项目的架构边界：core、plugins、Gateway、Agent、UI、apps 各自负责什么。
+7. `07-data-and-contracts.md`
+   认识贯穿全项目的数据合同：config、manifest、session、Gateway frame、tool schema、auth。
+8. `08-subsystem-map.md`
+   从目录和子系统角度建立全局地图，知道一个需求大概会落在哪些文件里。
+9. `09-development-workflow.md`
+   了解本仓库的开发、测试、格式化、文档和提交流程。
+10. `10-learning-roadmap.md`
+    给新手的分阶段学习路线和练习任务。
 
 ## 资料来源
 
@@ -49,5 +61,5 @@
 
 ## 当前限制
 
-按仓库规则我先尝试运行了 `pnpm docs:list`，但当前 shell 找不到 `pnpm`，所以没有拿到自动文档索引。这里改为直接读取仓库内相关 Markdown 和源码入口。
+按仓库规则我先尝试运行了 `pnpm docs:list`，但当前 shell 找不到 `pnpm`。随后直接运行了等价脚本 `node scripts/docs-list.js`，并结合仓库内相关 Markdown 和源码入口整理这些笔记。
 
