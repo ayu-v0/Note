@@ -24,6 +24,12 @@
    了解本仓库的开发、测试、格式化、文档和提交流程。
 10. `10-learning-roadmap.md`
     给新手的分阶段学习路线和练习任务。
+11. `15-agent-workspace-and-state.md`
+    解释 Agent 的 workspace 和 agentDir：哪些是真实文件夹，哪些是运行状态。
+12. `16-agent-tool-isolation.md`
+    解释 Agent 的工具隔离：全局 tools、per-agent tools、provider、sandbox、owner-only 和 subagent 规则如何叠加。
+13. `17-tool-registration-and-external-tools.md`
+    解释工具注册机制：manifest 的 `contracts.tools`、runtime 的 `api.registerTool(...)`，以及如何做外部插件工具。
 
 ## 资料来源
 
