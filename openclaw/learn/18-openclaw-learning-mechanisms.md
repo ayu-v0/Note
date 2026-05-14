@@ -653,7 +653,137 @@ version        = 这份快照对应的刷新版本
     resolvedSkills
 ```
 
-### 7. 最准确的新手结论
+### 7. “session 版本号”到底是什么
+
+这里容易误解：代码里并没有一个叫“session version”的顶层字段。
+
+`SessionEntry` 顶层主要是：
+
+- `src/config/sessions/types.ts:150`：`SessionEntry`
+- `src/config/sessions/types.ts:173`：`updatedAt`
+- `src/config/sessions/types.ts:196`：`sessionStartedAt`
+- `src/config/sessions/types.ts:328`：`skillsSnapshot?: SessionSkillSnapshot`
+
+真正跟技能快照刷新有关的版本号，是：
+
+```text
+sessionEntry.skillsSnapshot.version
+```
+
+它的类型在：
+
+- `src/config/sessions/types.ts:544`：`SessionSkillSnapshot`
+- `src/config/sessions/types.ts:556`：`version?: number`
+
+所以更准确的说法是：
+
+```text
+不是 session 自己有版本号；
+是 session 里缓存的 skillsSnapshot 有一个 version。
+```
+
+### 8. 新开一个会话会不会更新这个 version
+
+要分清两个动作：
+
+```text
+新开会话会重新构建/写入这个 session 的 skillsSnapshot。
+但新开会话本身不会 bump 全局 skills snapshot version。
+```
+
+普通 Agent run 的逻辑在 `src/agents/agent-command.ts`：
+
+- `src/agents/agent-command.ts:632`：先读取当前全局/工作区的 `skillsSnapshotVersion`
+- `src/agents/agent-command.ts:639`：`isNewSession || shouldRefreshSkillsSnapshot`
+- `src/agents/agent-command.ts:650`：需要时构建快照
+- `src/agents/agent-command.ts:662`：把当前 `skillsSnapshotVersion` 写入快照的 `version`
+- `src/agents/agent-command.ts:673` 到 `src/agents/agent-command.ts:687`：把快照保存进当前 session
+
+所以新会话的情况是：
+
+```text
+isNewSession = true
+        |
+        v
+构建新的 skillsSnapshot
+        |
+        v
+skillsSnapshot.version = 当前 getSkillsSnapshotVersion(workspaceDir) 的结果
+        |
+        v
+保存到这个新 session
+```
+
+如果此时没有任何技能变更信号，`getSkillsSnapshotVersion(workspaceDir)` 通常还是 `0`。
+那么新 session 里的 `skillsSnapshot.version` 也可能是 `0`。
+
+也就是说：
+
+```text
+新开会话会更新“这个 session 缓存的快照内容”；
+但不一定会让 version 数字变大。
+```
+
+version 数字变大只发生在 `bumpSkillsSnapshotVersion(...)` 被调用时，例如：
+
+```text
+SKILL.md 变化
+Skill Workshop 写入技能
+skills.* 配置变化
+远程节点能力变化
+```
+
+### 9. 用例子理解
+
+假设当前进程里还没有任何技能变更：
+
+```text
+globalVersion = 0
+workspaceVersion = 0
+getSkillsSnapshotVersion(workspaceDir) = 0
+```
+
+你新开 session A：
+
+```text
+session A 创建 skillsSnapshot
+session A.skillsSnapshot.version = 0
+```
+
+你再新开 session B：
+
+```text
+session B 也创建 skillsSnapshot
+session B.skillsSnapshot.version = 0
+```
+
+这两个 session 都有自己的快照，但 version 数字不一定变化。
+
+后来你修改了某个 `SKILL.md`：
+
+```text
+watcher -> bumpSkillsSnapshotVersion(workspaceDir)
+workspaceVersion = 1770000000000  // 类似 Date.now()
+```
+
+下一次 session A 或 B 再运行时：
+
+```text
+旧快照 version = 0
+当前 version = 1770000000000
+0 < 1770000000000
+        |
+        v
+刷新该 session 的 skillsSnapshot
+```
+
+所以它的作用不是记录“第几个会话”，而是记录：
+
+```text
+这个 session 缓存的技能快照，是基于哪一版技能环境生成的。
+```
+
+### 10. 最准确的新手结论
 
 ```text
 判断是否刷新技能快照：
